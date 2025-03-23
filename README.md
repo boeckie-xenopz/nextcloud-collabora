@@ -120,13 +120,51 @@ and configure *Nextcloud Office* as follows:
 
 ---
 
+## Configuration
+
+Traefik has several configuration options, in this project we opted for static configuration files for all Traefik configuration parameters that you probably do not have to change to get this project up and running and Traefik environment variables that you have to configure to get started.
+
+The static Traefik configuration file [traefik.yaml](./traefik.yaml) contains settings like enabling the Traefik dashboard, entrypoints, log level, etc. Its certificate resolver, however, is only partially configured, the ACME email address is missing. You can configure the ACME email address in the [traefik.env](./traefik.env) file, i.e. `TRAEFIK_CERTIFICATESRESOLVERS_MYRESOLVER_ACME_EMAIL`. Similar for the Traefik dashboard admin user name and password.
+
+The [.env](./.env) file contains all other configuration variables.
+
+To resume:
+
+- set non-Traefik environment variables in [.env](./env)
+- set Traefik environment variables in [traefik.env](./traefik.env)
+- if necessary edit [traefik.yaml](./traefik.yaml)
+- if necessary add dynamic Traefik configuration variables in [traefik_dynamic.yaml](./traefik_dynamic.yaml)
+  
+It is probably a good idea to keep your env variables in different env files depending on the environment, for example `.env_dev` for your non-Traefik environment variables and `traefik.env_dev` for your Traefik environment variables in development and to add those files to [.gitignore](./.gitignore).
+
+## Building
+
+Before building the containers, update the values in environment file [.env](./.env). If you'd like to use your own *.env* file, do not forget to rename it to *.env*.
+
+Build and start the containers with:
+
+```bash
+source .env
+docker compose up
+```
+
+or build and start the containers in the background with:
+
+```bash
+docker compose up -d
+```
+
+On Linux or WSL you can open the Traefik dashboard on [localhost:8080](http://localhost:8080/dashboard/) or use the office.your_domain.tld or cloud.your_domain.tld hostnames to access *Nextcloud* or *Collabora*.
+
+---
+
 ## Conclusion
 
 This repository provides an out-of-the-box solution for deploying Nextcloud with an integrated office suite (Collabora) and a robust reverse proxy (Traefik) that manages secure connections and dynamic routing. The Docker Compose file is designed to streamline the setup process while ensuring that each component is properly isolated, secure, and easily extendable.
 
 ## TODO
 
-- write an env file containing all configuration settings, in particular the NextCloud and Collabora domains
+- env_file per service?
 - make the install more robust with
   - an external and properly managed PostgreSQL instance
   - several container instances
@@ -135,3 +173,4 @@ This repository provides an out-of-the-box solution for deploying Nextcloud with
 
 - [Docker Compose for Nextcloud + Collabora + Traefik?](https://help.nextcloud.com/t/docker-compose-for-nextcloud-collabora-traefik/127733/6)
 - [Docker compose - Collabora - Traefik](https://help.nextcloud.com/t/docker-compose-collabora-traefik/219975)
+- [Traefik documentation](https://doc.traefik.io/traefik/)

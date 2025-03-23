@@ -1,0 +1,15 @@
+bin/
+/.vscode/
+coverage.out
+covdatafiles/
+.DS_Store
+
+.env_dev
+.env_prod
+.env_test
+.env_acc
+
+traefik.env_dev
+traefik.env_prod
+traefik.env_test
+traefik.env_acc
