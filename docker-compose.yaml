@@ -57,6 +57,15 @@ services:
       - POSTGRES_USER=nextcloud
       - POSTGRES_PASSWORD=password
 
+  redis:
+    image: redis:alpine
+    container_name: redis
+    hostname: redis
+    restart: always
+    volumes:
+      - /data/redis:/data
+    command: redis-server --appendonly yes
+
   nextcloud:
     image: nextcloud
     container_name: nextcloud
@@ -76,8 +85,11 @@ services:
       - TRUSTED_PROXIES=traefik
       - OVERWRITEPROTOCOL=https
       - NC_default_phone_region=BE
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
     depends_on:
       - postgres
+      - redis
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.nextcloud.tls=true'
@@ -126,3 +138,40 @@ services:
       - 'traefik.http.middlewares.collabora-header.headers.stsIncludeSubdomains=true'
       - 'traefik.http.middlewares.collabora-header.headers.browserXssFilter=true'
       - 'traefik.http.middlewares.collabora-header.headers.customRequestHeaders.X-Forwarded-Proto=https'
+
+  notify_push:
+    image: nextcloud/notify_push:latest
+    container_name: notify_push
+    hostname: notify_push
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+      - nextcloud
+    environment:
+      - NEXTCLOUD_URL=https://cloud.your_domain.tld
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=password
+      - NEXTCLOUD_TRUSTED_DOMAINS=cloud.your_domain.tld
+      - LOG_LEVEL=info
+    volumes:
+      - /data/nextcloud:/var/www/html:ro
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.notify-push.tls=true'
+      - 'traefik.http.routers.notify-push.tls.certresolver=myresolver'
+      - 'traefik.http.routers.notify-push.entrypoints=websecure'
+      - 'traefik.http.routers.notify-push.rule=Host(`cloud.your_domain.tld`) && PathPrefix(`/push`)'
+      - 'traefik.http.routers.notify-push.middlewares=notify-push-header'
+      - 'traefik.http.services.notify-push.loadbalancer.server.port=7867'
+      - 'traefik.http.middlewares.notify-push-header.headers.referrerPolicy=no-referrer'
+      - 'traefik.http.middlewares.notify-push-header.headers.stsSeconds=15552000'
+      - 'traefik.http.middlewares.notify-push-header.headers.forceSTSHeader=true'
+      - 'traefik.http.middlewares.notify-push-header.headers.stsPreload=true'
+      - 'traefik.http.middlewares.notify-push-header.headers.stsIncludeSubdomains=true'
+      - 'traefik.http.middlewares.notify-push-header.headers.browserXssFilter=true'
+      - 'traefik.http.middlewares.notify-push-header.headers.customRequestHeaders.X-Forwarded-Proto=https'
